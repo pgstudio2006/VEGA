@@ -4,6 +4,7 @@ from typing import List
 
 from vega.core.lifecycle import LifecycleEngine
 from vega.intelligence.filters import FalsePositiveFilter
+from vega.infrastructure.upstox_client import UpstoxLiveClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger("vega.runtime")
@@ -16,7 +17,11 @@ class VegaRuntime:
         self.watch_universe: List[str] = ["SPY", "QQQ", "IWM", "AAPL", "NVDA", "TSLA"]
         self.sector_leaders: List[str] = []
 
+        # Live Data Layer
+        self.upstox_client = UpstoxLiveClient()
+
     def start(self):
+        self.upstox_client.start_background_feed()
         self.running = True
         logger.info("VEGA Runtime starting. Entering continuous observation mode.")
         try:
@@ -35,13 +40,15 @@ class VegaRuntime:
             self._wait()
 
     def _observe(self):
-        # Layer 1: Cheap continuous observation
-        logger.debug("Observing market conditions...")
+        # Layer 1: Cheap continuous observation via live feed
+        logger.debug("Observing live market conditions...")
         for symbol in self.watch_universe:
-            # Multi-factor alignment check
-            import random
 
-            # Simulated deep metrics
+            # Fetch live quote data (fallback to simulation if keys are missing)
+            live_price = self.upstox_client.fetch_live_quote(symbol)
+
+            # In a full integration, these metrics derive directly from the WS feed
+            import random
             vol_score = random.uniform(0.5, 1.5) # RVOL
             liq_score = random.uniform(0.0, 1.0) # Quality
             rs_score = random.uniform(0.8, 1.2)  # Relative Strength
@@ -54,7 +61,8 @@ class VegaRuntime:
                 "rvol": vol_score,
                 "liquidity_quality": liq_score,
                 "relative_strength": rs_score,
-                "volatility_structure": "COMPRESSION"
+                "volatility_structure": "COMPRESSION",
+                "live_price": live_price
             }
 
             self.lifecycle_engine.evaluate(symbol, normalized_score, metrics)

@@ -16,6 +16,7 @@ class TerminalUI:
         layout = Layout()
         layout.split_column(
             Layout(name="header", size=3),
+            Layout(name="infra_status", size=3),
             Layout(name="main", ratio=1),
             Layout(name="footer", size=3)
         )
@@ -32,6 +33,12 @@ class TerminalUI:
 
     def render_header(self) -> Panel:
         return Panel("[bold cyan]VEGA Autonomous Market Intelligence Operating System[/bold cyan]", style="blue")
+
+    def render_infra_status(self, upstox_status: str, openrouter_status: str) -> Panel:
+        u_color = "green" if "CONNECTED" in upstox_status else "yellow"
+        o_color = "green" if "READY" in openrouter_status else "yellow"
+        content = f"Upstox Feed: [bold {u_color}]{upstox_status}[/bold {u_color}] | OpenRouter Cognition: [bold {o_color}]{openrouter_status}[/bold {o_color}]"
+        return Panel(content, title="Live Infrastructure")
 
     def render_market_structure(self, ecology: Any) -> Panel:
         content = f"Market Regime: [bold yellow]{ecology.regime}[/bold yellow]\n"
@@ -104,6 +111,12 @@ class TerminalUI:
         with Live(layout, refresh_per_second=2, screen=True):
             while vega_runtime.running:
                 layout["header"].update(self.render_header())
+
+                # Live Infra
+                u_status = vega_runtime.upstox_client.get_status()
+                o_status = vega_runtime.openrouter_client.get_status() if hasattr(vega_runtime, 'openrouter_client') else "UNKNOWN"
+                layout["infra_status"].update(self.render_infra_status(u_status, o_status))
+
                 layout["left_column"]["market_structure"].update(self.render_market_structure(vega_runtime.market_engine.ecology))
 
                 # Check for performance engine if initialized

@@ -13,6 +13,7 @@ from vega.execution.thesis import ThesisEngine
 from vega.infrastructure.reliability import RuntimeGuardian
 from vega.ui.terminal import TerminalUI
 from vega.memory.learning import PerformanceIntelligenceEngine
+from vega.intelligence.openrouter_client import OpenRouterClient
 
 logging.basicConfig(level=logging.WARNING) # Reduce noisy logs for UI
 
@@ -20,6 +21,7 @@ class VegaSystem(VegaRuntime):
     """The fully realized autonomous market intelligence operating system."""
     def __init__(self):
         super().__init__()
+        self.openrouter_client = OpenRouterClient()
         self.router = CognitiveRouter()
         self.society = AgentSociety()
         self.market_engine = MarketStructureEngine()
