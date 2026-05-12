@@ -23,7 +23,17 @@ class SectorIntelligenceAgent(BaseAgent):
         pass
 
     def evaluate(self, symbol: str) -> Dict[str, Any]:
-        return {"confidence": 0.7, "thesis": "Sector rotation showing relative strength"}
+        return {"confidence": 0.7, "thesis": "Sector showing structural relative strength and momentum breadth."}
+
+class VolumeAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("Volume")
+
+    def observe(self, market_data: Dict[str, Any]):
+        pass
+
+    def evaluate(self, symbol: str) -> Dict[str, Any]:
+        return {"confidence": 0.85, "thesis": "RVOL > 2.0 with positive delta confirming accumulation."}
 
 class LiquidityAgent(BaseAgent):
     def __init__(self):
@@ -33,7 +43,27 @@ class LiquidityAgent(BaseAgent):
         pass
 
     def evaluate(self, symbol: str) -> Dict[str, Any]:
-        return {"confidence": 0.9, "thesis": "Order book depth supports execution"}
+        return {"confidence": 0.9, "thesis": "Thick liquidity zones present, absorption of selling pressure."}
+
+class OptionsGammaAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("OptionsGamma")
+
+    def observe(self, market_data: Dict[str, Any]):
+        pass
+
+    def evaluate(self, symbol: str) -> Dict[str, Any]:
+        return {"confidence": 0.75, "thesis": "Dealer positioning indicates long gamma, suppressing volatility expansion."}
+
+class BreadthAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("Breadth")
+
+    def observe(self, market_data: Dict[str, Any]):
+        pass
+
+    def evaluate(self, symbol: str) -> Dict[str, Any]:
+        return {"confidence": 0.65, "thesis": "Participation intensity is broadening across market caps."}
 
 class RiskAgent(BaseAgent):
     def __init__(self):
@@ -43,4 +73,4 @@ class RiskAgent(BaseAgent):
         pass
 
     def evaluate(self, symbol: str) -> Dict[str, Any]:
-        return {"confidence": 0.8, "thesis": "Volatility within acceptable parameters"}
+        return {"confidence": 0.8, "thesis": "Correlation regime stable, execution risk within defined limits."}

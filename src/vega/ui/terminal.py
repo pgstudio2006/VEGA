@@ -29,11 +29,13 @@ class TerminalUI:
     def render_header(self) -> Panel:
         return Panel("[bold cyan]VEGA Autonomous Market Intelligence Operating System[/bold cyan]", style="blue")
 
-    def render_market_structure(self, regime: str) -> Panel:
-        content = f"Market Regime: [bold yellow]{regime}[/bold yellow]\n"
-        content += "Breadth: [green]Positive Divergence[/green]\n"
-        content += "Liquidity: [yellow]Moderate Stress[/yellow]\n"
-        return Panel(content, title="Market Ecology")
+    def render_market_structure(self, ecology: Any) -> Panel:
+        content = f"Market Regime: [bold yellow]{ecology.regime}[/bold yellow]\n"
+        content += f"Volatility: [magenta]{ecology.volatility_regime}[/magenta]\n"
+        content += f"Liquidity: [cyan]{ecology.liquidity_regime}[/cyan]\n"
+        content += f"Risk Status: [red]{ecology.risk_on_off}[/red]\n"
+        content += f"Breadth Score: {ecology.breadth_score:.2f}\n"
+        return Panel(content, title="Live Market Ecology")
 
     def render_agent_reasoning(self, intelligence_data: Dict[str, Any]) -> Panel:
         table = Table(title="Live Cognitive Alignment")
@@ -74,7 +76,7 @@ class TerminalUI:
         with Live(layout, refresh_per_second=2, screen=True):
             while vega_runtime.running:
                 layout["header"].update(self.render_header())
-                layout["market_structure"].update(self.render_market_structure(vega_runtime.market_engine.ecology.regime))
+                layout["market_structure"].update(self.render_market_structure(vega_runtime.market_engine.ecology))
 
                 # Extract intelligence state from runtime
                 intel_data = {}

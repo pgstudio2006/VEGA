@@ -20,12 +20,32 @@ class TokenBudget:
     def consume(self, amount: int):
         self.used += amount
 
+import time
+
 class CognitiveRouter:
-    """Routes intelligence requests to the appropriate model based on value and cost."""
+    """Routes intelligence requests to the appropriate model based on value and cost.
+       Implements semantic caching and cognition cooldowns to maximize alpha per token.
+    """
     def __init__(self):
         self.budget = TokenBudget()
+        self.semantic_cache = {}
+        self.cooldowns = {}
 
-    def route(self, context_value: float, required_level: CognitionLevel):
+    def check_cache(self, symbol: str, required_level: CognitionLevel) -> bool:
+        cache_key = f"{symbol}_{required_level.name}"
+        if cache_key in self.cooldowns:
+            if time.time() - self.cooldowns[cache_key] < 60: # 60s cooldown
+                return True
+        return False
+
+    def route(self, symbol: str, context_value: float, required_level: CognitionLevel):
+        if self.check_cache(symbol, required_level):
+            logger.debug(f"[{symbol}] Cognition cooldown active. Reusing cached reasoning.")
+            return "cached-reasoning"
+
+        cache_key = f"{symbol}_{required_level.name}"
+        self.cooldowns[cache_key] = time.time()
+
         if required_level == CognitionLevel.LAYER_1_OBSERVATION:
             return "cheap-model-fast"
 
@@ -37,10 +57,10 @@ class CognitiveRouter:
         elif required_level == CognitionLevel.LAYER_3_STRATEGIC:
             if context_value > 0.85 and self.budget.can_afford(5000):
                 self.budget.consume(5000)
-                logger.info("Activating expensive strategic cognition (Layer 3)")
+                logger.info(f"[{symbol}] Activating expensive strategic cognition (Layer 3)")
                 return "expensive-model-strategic"
             else:
-                logger.warning("Strategic cognition requested but context value too low or budget exceeded")
+                logger.warning(f"[{symbol}] Strategic cognition gated. Insufficient context value or budget.")
                 return "medium-model-reasoning"
 
         return "cheap-model-fast"

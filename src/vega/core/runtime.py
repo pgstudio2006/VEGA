@@ -35,17 +35,39 @@ class VegaRuntime:
         # Layer 1: Cheap continuous observation
         logger.debug("Observing market conditions...")
         for symbol in self.watch_universe:
-            # Simulate market data ingestion and scoring
+            # Multi-factor alignment check
             import random
-            score = random.random()
-            self.lifecycle_engine.evaluate(symbol, score, {"volatility": "normal", "liquidity": "high"})
+
+            # Simulated deep metrics
+            vol_score = random.uniform(0.5, 1.5) # RVOL
+            liq_score = random.uniform(0.0, 1.0) # Quality
+            rs_score = random.uniform(0.8, 1.2)  # Relative Strength
+
+            # Probabilistic scoring combining factors
+            base_score = (vol_score * 0.4) + (liq_score * 0.3) + (rs_score * 0.3)
+            normalized_score = min(1.0, max(0.0, (base_score - 0.5) / 1.0))
+
+            metrics = {
+                "rvol": vol_score,
+                "liquidity_quality": liq_score,
+                "relative_strength": rs_score,
+                "volatility_structure": "COMPRESSION"
+            }
+
+            self.lifecycle_engine.evaluate(symbol, normalized_score, metrics)
 
     def _analyze(self):
-        # Evaluate opportunities in higher states
-        for symbol, opp in self.lifecycle_engine.opportunities.items():
+        # Dynamic ranked watchlists based on continuous observation
+        ranked_opps = sorted(
+            [opp for opp in self.lifecycle_engine.opportunities.values() if opp.state.name != "OBSERVING"],
+            key=lambda x: x.score,
+            reverse=True
+        )
+
+        for opp in ranked_opps:
             if opp.state.name in ["EMERGING", "HIGH_ATTENTION"]:
-                logger.info(f"[{symbol}] Elevated Attention - Score: {opp.score:.2f} - State: {opp.state.name}")
-                # Trigger Layer 2 or Layer 3 reasoning here
+                logger.info(f"[{opp.symbol}] Ranked Opportunity - Score: {opp.score:.2f} - State: {opp.state.name}")
+                # Trigger Layer 2 or Layer 3 reasoning here based on ranking
 
     def _wait(self):
         # The system should spend most of its time watching and analyzing

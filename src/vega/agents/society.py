@@ -1,18 +1,23 @@
 from typing import Dict, List, Any
-from vega.agents.base import BaseAgent, SectorIntelligenceAgent, LiquidityAgent, RiskAgent
+from vega.agents.base import (
+    BaseAgent, SectorIntelligenceAgent, VolumeAgent,
+    LiquidityAgent, OptionsGammaAgent, BreadthAgent, RiskAgent
+)
 import logging
 
 logger = logging.getLogger("vega.agents.society")
 
 class AgentSociety:
-    """Coordinates specialized agents to form a probabilistic market understanding."""
+    """Coordinates specialized agents to form a probabilistic market understanding through debate and scoring."""
 
     def __init__(self):
         self.agents: List[BaseAgent] = [
             SectorIntelligenceAgent(),
+            VolumeAgent(),
             LiquidityAgent(),
+            OptionsGammaAgent(),
+            BreadthAgent(),
             RiskAgent()
-            # Add Volatility, Gamma, Macro, Execution, etc.
         ]
 
     def gather_perspectives(self, symbol: str) -> Dict[str, Any]:
