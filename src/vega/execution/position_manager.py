@@ -69,7 +69,9 @@ class PositionManager:
         logger.info(f"Opened Position: {symbol} at {price:.2f} (Size: {actual_size:.2f}). Risk strictly defined.")
         return True
 
-    def monitor_positions(self, current_prices: Dict[str, float], market_confidence: float, ecology_stress: float = 0.0):
+    def monitor_positions(self, current_prices: Dict[str, float], market_confidence: float, ecology_stress: float = 0.0, current_ecology: Any = None, performance_engine: Any = None):
+        self._last_ecology = current_ecology
+        self._last_performance_engine = performance_engine
         symbols_to_close = []
         for symbol, pos in self.active_positions.items():
             current_price = current_prices.get(symbol)
@@ -101,9 +103,34 @@ class PositionManager:
                  symbols_to_close.append(symbol)
 
         for s in symbols_to_close:
-            self.close_position(s)
+            self.close_position(
+                s,
+                exit_price=current_prices.get(s),
+                current_ecology=self._last_ecology,
+                performance_engine=self._last_performance_engine
+            )
 
-    def close_position(self, symbol: str):
+    def close_position(self, symbol: str, exit_price: float = None, current_ecology: Any = None, performance_engine: Any = None):
         if symbol in self.active_positions:
-            del self.active_positions[symbol]
-            logger.info(f"Closed Position: {symbol}")
+            pos = self.active_positions.pop(symbol)
+            if exit_price is None:
+                exit_price = pos.stop_loss # Fallback
+
+            # Calculate slippage/execution quality (simulated)
+            execution_quality = 1.0
+            if exit_price < pos.stop_loss: # Slippage occurred on stop
+                execution_quality = 0.8
+
+            logger.info(f"Closed Position: {symbol} at {exit_price:.2f}. Exec Quality: {execution_quality:.2f}")
+
+            # Trigger institutional post-trade review
+            if performance_engine and current_ecology:
+                performance_engine.review_closed_trade(
+                    symbol=symbol,
+                    entry_price=pos.entry_price,
+                    exit_price=exit_price,
+                    thesis=pos.thesis,
+                    ecology=current_ecology,
+                    confidence_at_entry=pos.confidence,
+                    execution_quality=execution_quality
+                )

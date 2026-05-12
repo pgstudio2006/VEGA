@@ -20,9 +20,13 @@ class TerminalUI:
             Layout(name="footer", size=3)
         )
         layout["main"].split_row(
-            Layout(name="market_structure", ratio=1),
+            Layout(name="left_column", ratio=1),
             Layout(name="agent_reasoning", ratio=2),
             Layout(name="active_positions", ratio=1)
+        )
+        layout["left_column"].split_column(
+            Layout(name="market_structure", ratio=1),
+            Layout(name="performance_intelligence", ratio=1)
         )
         return layout
 
@@ -62,6 +66,27 @@ class TerminalUI:
 
         return Panel(table, title="Continuous Opportunity Cognition Ladder")
 
+    def render_performance_intelligence(self, perf_engine: Any, fp_filter: Any) -> Panel:
+        if not perf_engine:
+            return Panel("Awaiting Post-Trade Data...", title="Performance Intelligence")
+
+        content = "[bold underline]Confidence Calibration[/bold underline]\n"
+        for bucket, stats in perf_engine.confidence_calibration.items():
+            total = stats['wins'] + stats['losses']
+            rate = (stats['wins']/total*100) if total > 0 else 0
+            content += f"{bucket.capitalize()} Conf Win Rate: {rate:.1f}%\n"
+
+        content += "\n[bold underline]Filter Effectiveness (Rejections)[/bold underline]\n"
+        for f_name, count in fp_filter.filter_effectiveness.items():
+            content += f"{f_name.capitalize()}: {count}\n"
+
+        content += "\n[bold underline]Top Archetypes[/bold underline]\n"
+        sorted_archs = sorted(perf_engine.performance_by_archetype.items(), key=lambda x: x[1]['total_pnl'], reverse=True)[:2]
+        for arch, stats in sorted_archs:
+            content += f"{arch}: {stats['total_pnl']:.2%} PnL\n"
+
+        return Panel(content, title="Self-Improving Cognition Analytics")
+
     def render_positions(self, positions: Dict[str, Any]) -> Panel:
         table = Table()
         table.add_column("Symbol")
@@ -69,7 +94,7 @@ class TerminalUI:
         table.add_column("Risk")
 
         for symbol, pos in positions.items():
-            table.add_row(symbol, str(pos.size), f"Stop: {pos.stop_loss}")
+            table.add_row(symbol, f"{pos.size:.1f}", f"Stop: {pos.stop_loss:.2f}")
 
         return Panel(table, title="Autonomous Position Management")
 
@@ -79,7 +104,11 @@ class TerminalUI:
         with Live(layout, refresh_per_second=2, screen=True):
             while vega_runtime.running:
                 layout["header"].update(self.render_header())
-                layout["market_structure"].update(self.render_market_structure(vega_runtime.market_engine.ecology))
+                layout["left_column"]["market_structure"].update(self.render_market_structure(vega_runtime.market_engine.ecology))
+
+                # Check for performance engine if initialized
+                perf_engine = getattr(vega_runtime, 'performance_engine', None)
+                layout["left_column"]["performance_intelligence"].update(self.render_performance_intelligence(perf_engine, vega_runtime.fp_filter))
 
                 # Extract intelligence state from runtime
                 intel_data = {}

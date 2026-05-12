@@ -9,8 +9,10 @@ from vega.intelligence.architecture import CognitiveRouter
 from vega.agents.society import AgentSociety
 from vega.intelligence.market_structure import MarketStructureEngine
 from vega.execution.position_manager import PositionManager
+from vega.execution.thesis import ThesisEngine
 from vega.infrastructure.reliability import RuntimeGuardian
 from vega.ui.terminal import TerminalUI
+from vega.memory.learning import PerformanceIntelligenceEngine
 
 logging.basicConfig(level=logging.WARNING) # Reduce noisy logs for UI
 
@@ -22,6 +24,8 @@ class VegaSystem(VegaRuntime):
         self.society = AgentSociety()
         self.market_engine = MarketStructureEngine()
         self.position_manager = PositionManager()
+        self.thesis_engine = ThesisEngine()
+        self.performance_engine = PerformanceIntelligenceEngine()
         self.guardian = RuntimeGuardian()
         self.ui = TerminalUI()
 
@@ -73,24 +77,40 @@ class VegaSystem(VegaRuntime):
         opp = self.lifecycle_engine.opportunities[symbol]
         opp.transition(OpportunityState.EXECUTING, "Routing to execution")
 
+        # Formulate full thesis
+        thesis = self.thesis_engine.formulate_thesis(symbol, perspectives)
+
         price = 100.0 + random.random() * 50
         self.position_manager.open_position(
             symbol=symbol,
             price=price,
             size=10.0,
             stop_loss=price * 0.95,
-            thesis=f"Aligned thesis with confidence {perspectives['average_confidence']:.2f}"
+            thesis=thesis,
+            metrics=opp.metrics
         )
         opp.transition(OpportunityState.MONITORING, "Position opened")
 
     def _wait(self):
         # Monitor open positions
         current_prices = {sym: pos.entry_price * (1 + random.uniform(-0.02, 0.03)) for sym, pos in self.position_manager.active_positions.items()}
-        self.position_manager.monitor_positions(current_prices, market_confidence=0.8)
+        self.position_manager.monitor_positions(
+            current_prices,
+            market_confidence=0.8,
+            ecology_stress=self.market_engine.assess_market_stress(),
+            current_ecology=self.market_engine.ecology,
+            performance_engine=self.performance_engine
+        )
 
-        # Clean up closed positions from lifecycle
-        for sym, pos in list(self.position_manager.active_positions.items()):
-            pass # Keep logic simple for simulation
+        # Periodically close simulated positions to trigger learning logic
+        if random.random() < 0.1 and self.position_manager.active_positions:
+            sym_to_close = list(self.position_manager.active_positions.keys())[0]
+            self.position_manager.close_position(
+                sym_to_close,
+                exit_price=current_prices.get(sym_to_close, 100.0),
+                current_ecology=self.market_engine.ecology,
+                performance_engine=self.performance_engine
+            )
 
         time.sleep(1)
 

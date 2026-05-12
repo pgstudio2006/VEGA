@@ -14,6 +14,7 @@ class TradeThesis:
     volatility_structure: str = ""
     breadth_support: str = ""
 
+    archetype: str = "UNKNOWN" # e.g. BREAKOUT, MEAN_REVERSION, VOLATILITY_EXPANSION
     expected_holding_profile: str = "INTRADAY" # SWING, POSITION
     invalidation_criteria: List[str] = field(default_factory=list)
     confidence_score: float = 0.0
@@ -40,6 +41,17 @@ class TradeThesis:
         )
 
 class ThesisEngine:
+    def _determine_archetype(self, perspectives: Dict[str, Any]) -> str:
+        # Simplistic heuristic for archetype determination based on agent narratives
+        combined_text = " ".join([p.get("thesis", "") for p in perspectives.values()]).lower()
+        if "breakout" in combined_text or "accumulation" in combined_text:
+            return "BREAKOUT"
+        if "mean reversion" in combined_text or "exhaustion" in combined_text:
+            return "MEAN_REVERSION"
+        if "volatility expansion" in combined_text:
+            return "VOLATILITY_EXPANSION"
+        return "MOMENTUM_CONTINUATION"
+
     def formulate_thesis(self, symbol: str, agent_perspectives: Dict[str, Any]) -> TradeThesis:
         # Synthesize agent perspectives into a cohesive thesis
         thesis = TradeThesis(symbol=symbol)
@@ -53,6 +65,7 @@ class ThesisEngine:
         if "SectorIntelligence" in perspectives:
             thesis.sector_context = perspectives["SectorIntelligence"].get("thesis", "")
 
+        thesis.archetype = self._determine_archetype(perspectives)
         thesis.confidence_score = agent_perspectives.get("average_confidence", 0.0)
 
         # Define invalidation
