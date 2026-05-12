@@ -6,12 +6,14 @@ from typing import Dict, Any
 class OpportunityState(Enum):
     OBSERVING = auto()
     EMERGING = auto()
-    HIGH_ATTENTION = auto()
+    VALIDATING = auto()
+    HIGH_CONVICTION = auto()
     EXECUTION_READY = auto()
     EXECUTING = auto()
-    MONITORING = auto()
+    MANAGING = auto()
     EXITING = auto()
     CLOSED = auto()
+    REVIEWED = auto()
 
 @dataclass
 class Opportunity:
@@ -47,12 +49,18 @@ class LifecycleEngine:
         opp.score = score
         opp.metrics.update(metrics)
 
-        # Simple state machine logic based on score
+        # Aggressive downgrading logic
+        if opp.state.value > OpportunityState.OBSERVING.value and opp.state.value < OpportunityState.EXECUTING.value:
+            if score < 0.4 or metrics.get("liquidity_quality", 1.0) < 0.3:
+                opp.transition(OpportunityState.OBSERVING, "Setup degraded: liquidity weakened or score collapsed.")
+                return
+
+        # Progressive state machine logic based on score
         if opp.state == OpportunityState.OBSERVING and score > 0.6:
             opp.transition(OpportunityState.EMERGING, "Score exceeded emergence threshold")
-        elif opp.state == OpportunityState.EMERGING and score > 0.8:
-            opp.transition(OpportunityState.HIGH_ATTENTION, "Score indicates high attention needed")
-        elif opp.state == OpportunityState.HIGH_ATTENTION and score > 0.9:
-            opp.transition(OpportunityState.EXECUTION_READY, "Multi-factor alignment confirmed")
-
-        # Add dynamic decay or invalidation logic here later
+        elif opp.state == OpportunityState.EMERGING and score > 0.75:
+            opp.transition(OpportunityState.VALIDATING, "Emerging setup validating against market structure")
+        elif opp.state == OpportunityState.VALIDATING and score > 0.85:
+            opp.transition(OpportunityState.HIGH_CONVICTION, "Validation successful. High conviction achieved.")
+        elif opp.state == OpportunityState.HIGH_CONVICTION and score > 0.9:
+            opp.transition(OpportunityState.EXECUTION_READY, "Multi-factor alignment confirmed. Ready for execution.")

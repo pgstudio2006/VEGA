@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from vega.core.lifecycle import LifecycleEngine
+from vega.intelligence.filters import FalsePositiveFilter
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger("vega.runtime")
@@ -11,7 +12,9 @@ class VegaRuntime:
     def __init__(self):
         self.running = False
         self.lifecycle_engine = LifecycleEngine()
+        self.fp_filter = FalsePositiveFilter()
         self.watch_universe: List[str] = ["SPY", "QQQ", "IWM", "AAPL", "NVDA", "TSLA"]
+        self.sector_leaders: List[str] = []
 
     def start(self):
         self.running = True
@@ -64,9 +67,19 @@ class VegaRuntime:
             reverse=True
         )
 
+        # Maintain live watchtower of leaders
+        self.sector_leaders = [opp.symbol for opp in ranked_opps[:3]]
+
         for opp in ranked_opps:
-            if opp.state.name in ["EMERGING", "HIGH_ATTENTION"]:
-                logger.info(f"[{opp.symbol}] Ranked Opportunity - Score: {opp.score:.2f} - State: {opp.state.name}")
+            # Apply false positive filter dynamically during transitions
+            if opp.state.name in ["VALIDATING", "HIGH_CONVICTION"]:
+                # In the real system, ecology would be passed here
+                # Simulation placeholder logic:
+                # is_valid, reason = self.fp_filter.evaluate_setup(opp.symbol, opp.metrics, self.market_engine.ecology)
+                pass
+
+            if opp.state.name in ["EMERGING", "VALIDATING", "HIGH_CONVICTION"]:
+                logger.info(f"[{opp.symbol}] Watchtower Update - Score: {opp.score:.2f} - State: {opp.state.name}")
                 # Trigger Layer 2 or Layer 3 reasoning here based on ranking
 
     def _wait(self):

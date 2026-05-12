@@ -21,7 +21,7 @@ class EpisodicMemory:
             "pnl": pnl
         }
         self.episodes.append(episode)
-        logger.info(f"Recorded Memory Episode: {symbol} in {regime} resulting in {outcome} ({pnl})")
+        logger.info(f"Recorded Memory Episode: {symbol} in {regime} resulting in {outcome} ({pnl:.2f})")
         self._persist()
 
     def recall_similar(self, current_regime: str, current_setup: Dict[str, Any]) -> List[Dict[str, Any]]:

@@ -30,15 +30,44 @@ class Position:
         self.size -= size_to_close
         logger.info(f"[{self.symbol}] Partial exit of {size_to_close} at {exit_price:.2f}. Reason: {reason}. Realized PnL: {pnl:.2f}")
 
+import time
+
 class PositionManager:
     """Manages live positions as living adaptive entities."""
     def __init__(self):
         self.active_positions: Dict[str, Position] = {}
+        self.last_trade_time = 0
+        self.max_daily_trades = 5
+        self.trades_today = 0
 
-    def open_position(self, symbol: str, price: float, size: float, stop_loss: float, thesis: str):
-        pos = Position(symbol=symbol, entry_price=price, size=size, stop_loss=stop_loss, thesis=thesis)
+    def can_trade(self) -> bool:
+        """Patience & Discipline Intelligence: prevents overtrading."""
+        if self.trades_today >= self.max_daily_trades:
+            logger.warning("Daily trade limit reached. Forcing patience.")
+            return False
+
+        if time.time() - self.last_trade_time < 300: # 5 min cooldown
+            logger.warning("Trade cooldown active. Preserving cognitive and execution bandwidth.")
+            return False
+
+        return True
+
+    def open_position(self, symbol: str, price: float, size: float, stop_loss: float, thesis: str, metrics: Dict[str, Any] = None):
+        if not self.can_trade():
+            return False
+
+        # Liquidity-sensitive sizing
+        actual_size = size
+        if metrics and metrics.get("liquidity_quality", 1.0) < 0.5:
+            actual_size = size * 0.5
+            logger.info(f"[{symbol}] Liquidity quality is low. Scaling down position size by 50%.")
+
+        pos = Position(symbol=symbol, entry_price=price, size=actual_size, stop_loss=stop_loss, thesis=thesis)
         self.active_positions[symbol] = pos
-        logger.info(f"Opened Position: {symbol} at {price}. Risk strictly defined.")
+        self.last_trade_time = time.time()
+        self.trades_today += 1
+        logger.info(f"Opened Position: {symbol} at {price:.2f} (Size: {actual_size:.2f}). Risk strictly defined.")
+        return True
 
     def monitor_positions(self, current_prices: Dict[str, float], market_confidence: float, ecology_stress: float = 0.0):
         symbols_to_close = []

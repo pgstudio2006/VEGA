@@ -37,27 +37,30 @@ class TerminalUI:
         content += f"Breadth Score: {ecology.breadth_score:.2f}\n"
         return Panel(content, title="Live Market Ecology")
 
-    def render_agent_reasoning(self, intelligence_data: Dict[str, Any]) -> Panel:
-        table = Table(title="Live Cognitive Alignment")
+    def render_agent_reasoning(self, intelligence_data: Dict[str, Any], leaders: list) -> Panel:
+        table = Table(title=f"Live Watchtower (Leaders: {', '.join(leaders) if leaders else 'None'})")
         table.add_column("Symbol")
-        table.add_column("State")
-        table.add_column("Agent Alignment")
-        table.add_column("Action")
+        table.add_column("Lifecycle State")
+        table.add_column("Conviction")
+        table.add_column("Action / Status")
 
         for symbol, data in intelligence_data.items():
             state = data.get("state", "OBSERVING")
             conf = data.get("confidence", 0.0)
             align_str = f"{conf*100:.0f}%"
-            if conf > 0.8:
-                action = "[bold green]EXECUTION_READY[/bold green]"
-            elif conf > 0.6:
-                action = "[bold yellow]HIGH_ATTENTION[/bold yellow]"
+
+            if state == "EXECUTION_READY" or state == "EXECUTING":
+                action = "[bold green]EXECUTING / READY[/bold green]"
+            elif state == "HIGH_CONVICTION":
+                action = "[bold yellow]DEBATING / VALIDATING[/bold yellow]"
+            elif state == "VALIDATING":
+                 action = "[blue]VALIDATING MULTI-FACTOR[/blue]"
             else:
-                action = "[dim]WATCHING[/dim]"
+                action = "[dim]WATCHING / DEGRADED[/dim]"
 
             table.add_row(symbol, state, align_str, action)
 
-        return Panel(table, title="Opportunity Lifecycle & Intelligence")
+        return Panel(table, title="Continuous Opportunity Cognition Ladder")
 
     def render_positions(self, positions: Dict[str, Any]) -> Panel:
         table = Table()
@@ -86,7 +89,7 @@ class TerminalUI:
                     if opp.state != OpportunityState.OBSERVING:
                         intel_data[sym] = {"state": opp.state.name, "confidence": opp.score}
 
-                layout["agent_reasoning"].update(self.render_agent_reasoning(intel_data))
+                layout["agent_reasoning"].update(self.render_agent_reasoning(intel_data, vega_runtime.sector_leaders))
 
                 # Safely copy active positions
                 positions_copy = dict(vega_runtime.position_manager.active_positions)

@@ -49,15 +49,25 @@ class VegaSystem(VegaRuntime):
             self.lifecycle_engine.evaluate(symbol, score, {})
 
     def _analyze(self):
+        super()._analyze() # Run watchtower logic
+
         for symbol, opp in list(self.lifecycle_engine.opportunities.items()):
-            if opp.state == OpportunityState.HIGH_ATTENTION:
-                # Trigger Agent Society
+            if opp.state == OpportunityState.HIGH_CONVICTION:
+                # 1. Check False Positives
+                is_valid, reason = self.fp_filter.evaluate_setup(symbol, opp.metrics, self.market_engine.ecology)
+                if not is_valid:
+                    opp.transition(OpportunityState.OBSERVING, f"False Positive Rejected: {reason}")
+                    continue
+
+                # 2. Trigger Agent Society Debate
                 perspectives = self.society.gather_perspectives(symbol)
 
                 if perspectives["is_aligned"]:
-                    opp.transition(OpportunityState.EXECUTION_READY, "Society Aligned")
+                    opp.transition(OpportunityState.EXECUTION_READY, "Society Aligned. High Conviction validated.")
                     # Move to execution
                     self._execute(symbol, perspectives)
+                else:
+                    opp.transition(OpportunityState.VALIDATING, "Agent debate lacked consensus.")
 
     def _execute(self, symbol, perspectives):
         opp = self.lifecycle_engine.opportunities[symbol]
